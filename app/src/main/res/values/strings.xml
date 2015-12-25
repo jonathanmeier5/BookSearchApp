@@ -1,0 +1,8 @@
+<resources>
+
+    <string name="app_name">Bookmaster General</string>
+    <string name="textview">Search For Books!</string>
+    <string name="button">Search</string>
+    <string name="hint">Title and/or Author</string>
+
+</resources>
