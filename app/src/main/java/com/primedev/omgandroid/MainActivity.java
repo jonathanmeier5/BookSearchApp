@@ -41,7 +41,7 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
     EditText mainEditText;
 
     ListView mainListView;
-    ArrayAdapter mArrayAdapter;
+    JSONAdapter mJSONAdapter;
     ArrayList mNameList = new ArrayList();
 
     ShareActionProvider mShareActionProvider;
@@ -68,19 +68,19 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
         // 4. Access the ListView
         mainListView = (ListView) findViewById(R.id.main_listview);
 
-        // Create an ArrayAdapter for the ListView
-        mArrayAdapter = new ArrayAdapter(this,
-                android.R.layout.simple_list_item_1,
-                mNameList);
-
-        // Set the ListView to use the ArrayAdapter
-        mainListView.setAdapter(mArrayAdapter);
         // 5. Set this activity to react to list items being pressed
         mainListView.setOnItemClickListener(this);
 
+        // 10. Create a JSONAdapter for the ListView
+        mJSONAdapter = new JSONAdapter(this, getLayoutInflater());
+
+// Set the ListView to use the ArrayAdapter
+        mainListView.setAdapter(mJSONAdapter);
 
         // 7. Greet the user, or ask for their name if new
         displayWelcome();
+
+
 
 
     }
@@ -112,16 +112,10 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
 
         String enteredText = mainEditText.getText().toString();
 
+        queryBooks(enteredText);
+
         mainTextView.setText(enteredText
                 + " is learning Android development!");
-
-        mNameList.add(enteredText);
-        mArrayAdapter.notifyDataSetChanged();
-
-        // 6. The text you'd like to share has changed,
-        // and you need to update
-        setShareIntent();
-        mainEditText.setText("");
 
         View view = this.getCurrentFocus();
         if (view != null) {
@@ -129,14 +123,11 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
 
-
     }
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-        // Log the item's position and contents
-        // to the console in Debug
-        Log.d("omg android", position + ": " + mNameList.get(position));
+
 
     }
 
@@ -239,8 +230,8 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
                         // to announce your success
                         Toast.makeText(getApplicationContext(), "Success!", Toast.LENGTH_LONG).show();
 
-                        // 8. For now, just log results
-                        Log.d("omg android", jsonObject.toString());
+                        // update the data in your custom method.
+                        mJSONAdapter.updateData(jsonObject.optJSONArray("docs"));
                     }
 
                     @Override
