@@ -1,5 +1,6 @@
 package com.primedev.omgandroid;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -9,10 +10,14 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.ShareActionProvider;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -33,8 +38,7 @@ import java.util.ArrayList;
 
 
 public class MainActivity extends ActionBarActivity
-implements View.OnClickListener, AdapterView.OnItemClickListener
-{
+implements View.OnClickListener, AdapterView.OnItemClickListener {
 
     Button mainButton;
     TextView mainTextView;
@@ -50,6 +54,8 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
     private static final String PREF_NAME = "name";
     SharedPreferences mSharedPreferences;
 
+    ProgressDialog mDialog;
+
     private static final String QUERY_URL = "http://openlibrary.org/search.json?q=";
 
     @Override
@@ -62,20 +68,43 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
         // 2. Access the Button defined in layout XML
         // and listen for it here
         mainButton = (Button) findViewById(R.id.main_button);
-        mainButton.setOnClickListener((View.OnClickListener) this);
+        mainButton.setOnClickListener(this);
         // 3. Access the EditText defined in layout XML
         mainEditText = (EditText) findViewById(R.id.main_edittext);
+
+        mainEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+
+                                                   @Override
+                                                   public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                                                       if (actionId == EditorInfo.IME_ACTION_DONE) {
+                                                           mainTextView.setText("We got it!");
+
+                                                           onClick(v);
+
+
+                                                           //btnNext.setEnabled(true);
+                                                       }
+                                                       return false;
+                                                   }
+                                               } );
         // 4. Access the ListView
         mainListView = (ListView) findViewById(R.id.main_listview);
 
         // 5. Set this activity to react to list items being pressed
         mainListView.setOnItemClickListener(this);
+        //mainListView.setOnKeyListener(this);
 
         // 10. Create a JSONAdapter for the ListView
         mJSONAdapter = new JSONAdapter(this, getLayoutInflater());
 
-// Set the ListView to use the ArrayAdapter
+        // Set the ListView to use the ArrayAdapter
         mainListView.setAdapter(mJSONAdapter);
+
+        mDialog = new ProgressDialog(this);
+        mDialog.setMessage("Searching for Book");
+        mDialog.setCancelable(false);
+
+        //mainTextView.setImeActionLabel("Search", KeyEvent.KEYCODE_ENTER);
 
         // 7. Greet the user, or ask for their name if new
         displayWelcome();
@@ -91,7 +120,7 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
         // Adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
-        // Access the Share Item defined in menu XML
+            // Access the Share Item defined in menu XML
         MenuItem shareItem = menu.findItem(R.id.menu_item_share);
 
         // Access the object responsible for
@@ -128,7 +157,21 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
 
+        // 12. Now that the user's chosen a book, grab the cover data
+        JSONObject jsonObject = (JSONObject) mJSONAdapter.getItem(position);
+        String coverID = jsonObject.optString("cover_i","");
 
+        // create an Intent to take you over to a new DetailActivity
+        Intent detailIntent = new Intent(this, DetailActivity.class);
+
+        // pack away the data about the cover
+        // into your Intent before you head out
+        detailIntent.putExtra("coverID", coverID);
+
+// TODO: add any other data you'd like as Extras
+
+            // start the next Activity using your prepared Intent
+            startActivity(detailIntent);
     }
 
     private void setShareIntent() {
@@ -218,6 +261,9 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
         // Create a client to perform networking
         AsyncHttpClient client = new AsyncHttpClient();
 
+        // Show ProgressDialog to inform user that a task in the background is occurring
+        mDialog.show();
+
         // Have the client get a JSONArray of data
         // and define how to respond
         client.get(QUERY_URL + urlString,
@@ -225,6 +271,9 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
 
                     @Override
                     public void onSuccess(JSONObject jsonObject) {
+
+                        // 11. Dismiss the ProgressDialog
+                        mDialog.dismiss();
 
                         // Display a "Toast" message
                         // to announce your success
@@ -236,6 +285,10 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
 
                     @Override
                     public void onFailure(int statusCode, Throwable throwable, JSONObject error) {
+
+                        // 11. Dismiss the ProgressDialog
+                        mDialog.dismiss();
+
                         // Display a "Toast" message
                         // to announce the failure
                         Toast.makeText(getApplicationContext(), "Error: " + statusCode + " " + throwable.getMessage(), Toast.LENGTH_LONG).show();
@@ -246,4 +299,5 @@ implements View.OnClickListener, AdapterView.OnItemClickListener
                     }
                 });
     }
+
 }
